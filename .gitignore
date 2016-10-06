@@ -1,0 +1,8 @@
+# edit
+*~
+*.swp
+
+# bin
+*.exe
+*.o
+
