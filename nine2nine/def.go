@@ -334,6 +334,10 @@ func (c *choice) kill(n, x, y int) {
 }
 
 func (c *choice) free(n, t, a, b int) {
+	// TODO: 规则
+	// 1. 数字在同一行内全部在一个 cell，则 cell 该数字其他位置要清除
+	// 2. 如果同一（cell？）内 n 个数字只能出现在 n 个位置，则其他数字不能出现在这两个位置
+
 	s := c[n-1][t][a]
 	i := 0
 	for ; i < len(s); i++ {
@@ -554,8 +558,7 @@ func (s *State) Board() Board {
 	return s.board
 }
 
-func (s *State) Next(n, c, p int) (*State, bool) {
-	x, y := Cell2XY(c, p)
+func (s *State) Next(n, x, y int) (*State, bool) {
 	if !s.board.Empty(x, y) {
 		return nil, false
 	}

@@ -3,6 +3,7 @@ package nine2nine
 import (
 	"fmt"
 	"strings"
+	"time"
 )
 
 type Search struct {
@@ -24,16 +25,19 @@ func newNode(s *State) *node {
 	return &node{s, numbers}
 }
 
-func (n *node) next() (*State, bool) {
+func (n *node) next() (*node, bool) {
 	for len(n.numbers) > 0 {
-		number := n.numbers[0][0]
-		c := n.numbers[0][1]
-		p := n.numbers[0][2]
+		tup := n.numbers[0]
 		n.numbers = n.numbers[1:]
 
-		s, ok := n.s.Next(number, c, p)
+		number := tup[0]
+		x, y := Cell2XY(tup[1], tup[2])
+		s, ok := n.s.Next(number, x, y)
+
+		//n.s.choice.kill(number, x, y)
+
 		if ok {
-			return s, true
+			return newNode(s), true
 		}
 	}
 
@@ -45,15 +49,18 @@ func (s *Search) Search() []Board {
 	results := make([]Board, 0)
 	c := 0
 	d := 0
+	maxDepth := len(nodes)
+	start := time.Now()
 	for len(nodes) > 0 {
-		s, ok := nodes[len(nodes)-1].next()
+		n, ok := nodes[len(nodes)-1].next()
 		if !ok {
 			nodes = nodes[:len(nodes)-1]
 			continue
 		}
 
-		if s.Board().Finished() {
-			b := s.Board()
+		c++
+		if n.s.Board().Finished() {
+			b := n.s.Board()
 			found := false
 			for _, board := range results {
 				if board == b {
@@ -63,35 +70,46 @@ func (s *Search) Search() []Board {
 
 			if !found {
 				//fmt.Println("one result:")
-				//s.Board().Print()
-				results = append(results, s.Board())
+				//n.s.Board().Print()
+				results = append(results, n.s.Board())
 			}
 
 			break
 		} else {
-			nodes = append(nodes, newNode(s))
-
-			c++
-			show := func() bool {
-				if c%10000 == 0 {
-					return true
-				}
-
-				dd := d - len(nodes)
-				if dd <= -3 || dd >= 3 {
-					return true
-				}
-
-				return false
+			show := false
+			nodes = append(nodes, n)
+			if len(nodes) > maxDepth {
+				maxDepth = len(nodes)
+				show = true
 			}
 
-			if show() {
+			if c > 100000 {
+				break
+			}
+
+			dd := d - len(nodes)
+			if dd <= -3 || dd >= 3 {
+				show = true
+			}
+
+			if show {
 				d = len(nodes)
-				fmt.Printf("\rdepath %2d times %-10d numbers %2d %s%s", len(nodes), c, s.Board().Numbers(), strings.Repeat("=", len(nodes)), strings.Repeat(" ", 30-len(nodes)))
+				fmt.Printf("\rdepth %2d times %-10d numbers %2d %s%s", len(nodes), c, n.s.Board().Numbers(), strings.Repeat("=", len(nodes)), strings.Repeat(" ", 30-len(nodes)))
 			}
 		}
 	}
 
-	fmt.Println()
+	result := "has result"
+	if len(results) == 0 {
+		if len(nodes) > 0 {
+			result = "give up..."
+		} else {
+			result = "no result"
+		}
+	} else if len(results) > 1 {
+		result = "has results"
+	}
+
+	fmt.Printf("\rmax depth %2d, times %d, used time %v, %s  \n", maxDepth, c, time.Now().Sub(start), result)
 	return results
 }
