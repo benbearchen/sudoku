@@ -334,10 +334,6 @@ func (c *choice) kill(n, x, y int) {
 }
 
 func (c *choice) free(n, t, a, b int) {
-	// TODO: 规则
-	// 1. 数字在同一行内全部在一个 cell，则 cell 该数字其他位置要清除
-	// 2. 如果同一（cell？）内 n 个数字只能出现在 n 个位置，则其他数字不能出现在这两个位置
-
 	s := c[n-1][t][a]
 	i := 0
 	for ; i < len(s); i++ {
@@ -398,6 +394,108 @@ func (c *choice) free(n, t, a, b int) {
 						nx, ny := Cell2XY(nc, np)
 						c.kill(n, nx, ny)
 						//fmt.Println("kill xy (", nx, ",", ny, ")")
+					}
+				}
+			}
+		} else if t == 1 {
+			h := -1
+			switch len(s) {
+			case 2:
+				if s[0]/M == s[1]/M {
+					//fmt.Printf("H2 n %d, h %d, pos %v\n", n, a, s)
+					h = s[0] / M
+				}
+			case 3:
+				if s[0]/M == s[1]/M && s[0]/M == s[2]/M {
+					//fmt.Printf("H3 n %d, h %d, pos %v\n", n, a, s)
+					h = s[0] / M
+				}
+			}
+
+			if h != -1 {
+				y0 := a / M * M
+				x0 := h * M
+				for j := 0; j < M; j++ {
+					hy := y0 + j
+					if hy == a {
+						continue
+					}
+
+					for i := 0; i < M; i++ {
+						hx := x0 + i
+						c.kill(n, hx, hy)
+					}
+				}
+			}
+		} else if t == 2 {
+			v := -1
+			switch len(s) {
+			case 2:
+				if s[0]/M == s[1]/M {
+					//fmt.Printf("V2 n %d, v %d, pos %v\n", n, a, s)
+					v = s[0] / M
+				}
+			case 3:
+				if s[0]/M == s[1]/M && s[0]/M == s[2]/M {
+					//fmt.Printf("V3 n %d, v %d, pos %v\n", n, a, s)
+					v = s[0] / M
+				}
+			}
+
+			if v != -1 {
+				x0 := a / M * M
+				y0 := v * M
+				for i := 0; i < M; i++ {
+					hx := x0 + i
+					if hx == a {
+						continue
+					}
+
+					for j := 0; j < M; j++ {
+						hy := y0 + j
+						c.kill(n, hx, hy)
+					}
+				}
+			}
+		}
+
+		// 检查是否有重叠的数字
+		if len(c[n-1][t][a]) > 0 {
+			ss := make(map[string][]int)
+			sn := make(map[string][]int)
+			for i := 0; i < N; i++ {
+				s := c[i][t][a]
+				if len(s) <= 1 {
+					continue
+				}
+
+				v := fmt.Sprintf("%v", s)
+				_, ok := ss[v]
+				if ok {
+					sn[v] = append(sn[v], i+1)
+				} else {
+					ss[v] = s
+					sn[v] = []int{i + 1}
+				}
+			}
+
+			if len(ss) > 1 {
+				for v, s := range ss {
+					ns := sn[v]
+					if len(s) == len(ns) && len(s) > 1 {
+						//fmt.Printf("pair t %d, a %d, pos %v, numbers %v\n", t, a, s, ns)
+						set := make(map[int]bool)
+						for _, n := range ns {
+							set[n] = true
+						}
+
+						for _, p := range s {
+							for i := 0; i < N; i++ {
+								if _, ok := set[i+1]; !ok {
+									c.free(i+1, t, a, p)
+								}
+							}
+						}
 					}
 				}
 			}

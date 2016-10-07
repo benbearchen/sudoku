@@ -93,7 +93,16 @@ func main() {
 		5, 0, 0, 0, 0, 0, 0, 0, 6,
 	})
 
-	// hard result: 356489217842751693917623548469817352731562489528394761284936175693175824175248936
+	// hard result:
+	// 356489217
+	// 842751693
+	// 917623548
+	// 469817352
+	// 731562489
+	// 528394761
+	// 284936175
+	// 693175824
+	// 175248936
 	hard := n2n.Board([81]int{
 		0, 5, 0, 0, 8, 0, 0, 1, 7,
 		0, 0, 2, 0, 5, 0, 0, 0, 0,
@@ -120,7 +129,11 @@ func main() {
 
 	all := []n2n.Board{easy, low, middle, high, high2, hard2, hard0, hard}
 
-	for _, sudoku := range all {
+	for i, sudoku := range all {
+		if i == -1 {
+			break
+		}
+
 		fmt.Println("  ---")
 		fmt.Println("sudoku:")
 		sudoku.Print()
