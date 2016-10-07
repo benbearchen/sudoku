@@ -2,6 +2,7 @@ package nine2nine
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -20,7 +21,7 @@ type node struct {
 }
 
 func newNode(s *State) *node {
-	numbers := s.choice.allByNumbers()
+	numbers := s.choice.AllByNumbers()
 
 	return &node{s, numbers}
 }
@@ -44,7 +45,7 @@ func (n *node) next() (*node, bool) {
 	return nil, false
 }
 
-func (s *Search) Search() []Board {
+func (s *Search) Search(maxTimes int, single bool) []Board {
 	nodes := []*node{newNode(s.s)}
 	results := make([]Board, 0)
 	c := 0
@@ -74,7 +75,9 @@ func (s *Search) Search() []Board {
 				results = append(results, n.s.Board())
 			}
 
-			break
+			if single {
+				break
+			}
 		} else {
 			show := false
 			nodes = append(nodes, n)
@@ -83,7 +86,7 @@ func (s *Search) Search() []Board {
 				show = true
 			}
 
-			if c > 100000 {
+			if c > maxTimes {
 				break
 			}
 
@@ -107,7 +110,7 @@ func (s *Search) Search() []Board {
 			result = "no result"
 		}
 	} else if len(results) > 1 {
-		result = "has results"
+		result = "has " + strconv.Itoa(len(results)) + " results"
 	}
 
 	fmt.Printf("\rmax depth %2d, times %d, used time %v, %s  \n", maxDepth, c, time.Now().Sub(start), result)

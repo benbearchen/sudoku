@@ -3,6 +3,7 @@ package nine2nine
 import (
 	"fmt"
 	"sort"
+	"strconv"
 )
 
 const M = 3
@@ -128,6 +129,15 @@ func (b Board) Print() {
 	}
 }
 
+func (b Board) OneLine() string {
+	r := ""
+	for _, n := range b {
+		r += strconv.Itoa(n)
+	}
+
+	return r
+}
+
 type group struct {
 	num []int
 	pos []int
@@ -243,15 +253,15 @@ func (b Board) SplitLeft() (cell, horizon, vertical [N]group, numbers [N]number)
 	return
 }
 
-func (b Board) choice() *choice {
-	c := newChoice()
-	c.init(b)
+func (b Board) Choice() *Choice {
+	c := NewChoice()
+	c.Init(b)
 	return c
 }
 
-type choice [N][3][N][]int
+type Choice [N][3][N][]int
 
-func newChoice() *choice {
+func NewChoice() *Choice {
 	a := func() []int {
 		a := make([]int, N)
 		for i := 0; i < N; i++ {
@@ -261,7 +271,7 @@ func newChoice() *choice {
 		return a
 	}
 
-	c := new(choice)
+	c := new(Choice)
 	for i := 0; i < N; i++ {
 		for t := 0; t < 3; t++ {
 			for j := 0; j < N; j++ {
@@ -273,7 +283,7 @@ func newChoice() *choice {
 	return c
 }
 
-func (c *choice) init(b Board) {
+func (c *Choice) Init(b Board) {
 	for x := 0; x < N; x++ {
 		for y := 0; y < N; y++ {
 			n := b.Value(x, y)
@@ -284,7 +294,7 @@ func (c *choice) init(b Board) {
 	}
 }
 
-func (c *choice) can(x, y, number int) bool {
+func (c *Choice) can(x, y, number int) bool {
 	mc, mp := XY2Cell(x, y)
 
 	if !c.has(number, 0, mc, mp) || !c.has(number, 1, y, x) || !c.has(number, 2, x, y) {
@@ -294,7 +304,7 @@ func (c *choice) can(x, y, number int) bool {
 	}
 }
 
-func (c *choice) trySet(x, y, number int) bool {
+func (c *Choice) trySet(x, y, number int) bool {
 	mc, mp := XY2Cell(x, y)
 
 	if !c.has(number, 0, mc, mp) || !c.has(number, 1, y, x) || !c.has(number, 2, x, y) {
@@ -326,14 +336,14 @@ func (c *choice) trySet(x, y, number int) bool {
 	return true
 }
 
-func (c *choice) kill(n, x, y int) {
+func (c *Choice) kill(n, x, y int) {
 	nc, np := XY2Cell(x, y)
 	c.free(n, 0, nc, np)
 	c.free(n, 1, y, x)
 	c.free(n, 2, x, y)
 }
 
-func (c *choice) free(n, t, a, b int) {
+func (c *Choice) free(n, t, a, b int) {
 	s := c[n-1][t][a]
 	i := 0
 	for ; i < len(s); i++ {
@@ -503,11 +513,11 @@ func (c *choice) free(n, t, a, b int) {
 	}
 }
 
-func (c *choice) freeGroup(n, t, a int) {
+func (c *Choice) freeGroup(n, t, a int) {
 	c[n-1][t][a] = []int{}
 }
 
-func (c *choice) has(n, t, a, b int) bool {
+func (c *Choice) has(n, t, a, b int) bool {
 	for _, v := range c[n-1][t][a] {
 		if v == b {
 			return true
@@ -517,8 +527,8 @@ func (c *choice) has(n, t, a, b int) bool {
 	return false
 }
 
-func (c *choice) clone() *choice {
-	v := choice{}
+func (c *Choice) Clone() *Choice {
+	v := Choice{}
 	for i := 0; i < N; i++ {
 		for t := 0; t < 3; t++ {
 			for j := 0; j < N; j++ {
@@ -533,7 +543,7 @@ func (c *choice) clone() *choice {
 	return &v
 }
 
-func (c *choice) best() (x, y, number int, exist bool) {
+func (c *Choice) best() (x, y, number int, exist bool) {
 	for n := 1; n <= N; n++ {
 		for i := 0; i < N; i++ {
 			if len(c[n-1][0][i]) == 1 {
@@ -556,7 +566,7 @@ func (c *choice) best() (x, y, number int, exist bool) {
 	return 0, 0, 0, false
 }
 
-func (c *choice) Print() {
+func (c *Choice) Print() {
 	for n := 1; n <= N; n++ {
 		fmt.Println(n, ":")
 		for i := 0; i < N; i++ {
@@ -591,7 +601,7 @@ func (c *choice) Print() {
 	}
 }
 
-func (c *choice) all() [][3]int {
+func (c *Choice) All() [][3]int {
 	sn := [N + 1][]int{}
 	sc := [N + 1][]int{}
 	sp := [N + 1][][]int{}
@@ -630,7 +640,7 @@ func (c *choice) all() [][3]int {
 	return numbers
 }
 
-func (c *choice) allByNumbers() [][3]int {
+func (c *Choice) AllByNumbers() [][3]int {
 	numbers := make([][3]int, 0)
 	for i, a := range c {
 		for c, pos := range a[0] {
@@ -644,16 +654,25 @@ func (c *choice) allByNumbers() [][3]int {
 }
 
 type State struct {
+	base   Board
 	board  Board
-	choice *choice
+	choice *Choice
 }
 
-func NewState(b *Board) *State {
-	return &State{*b, b.choice()}
+func NewState(b Board) *State {
+	return &State{b, b, b.Choice()}
+}
+
+func (s *State) Base() Board {
+	return s.base
 }
 
 func (s *State) Board() Board {
 	return s.board
+}
+
+func (s *State) Choice() *Choice {
+	return s.choice
 }
 
 func (s *State) Next(n, x, y int) (*State, bool) {
@@ -661,7 +680,7 @@ func (s *State) Next(n, x, y int) (*State, bool) {
 		return nil, false
 	}
 
-	ns := &State{s.board, s.choice.clone()}
+	ns := &State{s.board, s.board, s.choice.Clone()}
 	if ns.choice.trySet(x, y, n) {
 		ns.board.Set(x, y, n)
 		if ns.Trim2() {

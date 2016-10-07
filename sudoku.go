@@ -149,7 +149,7 @@ func main() {
 			continue
 		}
 
-		state := n2n.NewState(&sudoku)
+		state := n2n.NewState(sudoku)
 		if state == nil {
 			fmt.Println("can't create state")
 			continue
@@ -165,7 +165,7 @@ func main() {
 			//continue
 			fmt.Println("start searching")
 			search := n2n.NewSearch(state)
-			results := search.Search()
+			results := search.Search(10000, true)
 			if len(results) == 0 {
 				fmt.Println("Sh*t, can't found result")
 			} else {
