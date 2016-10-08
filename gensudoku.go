@@ -9,11 +9,11 @@ import (
 
 func main() {
 	start := time.Now()
-	GEN := 2000
+	GEN := 100
 	succ := 0
 	times := make(map[int]int)
 	for i := 0; i < GEN; i++ {
-		_, t, ok := generator.GenerateComplete()
+		_, _, t, ok := generator.GenerateComplete()
 		times[t]++
 
 		if ok {
@@ -34,12 +34,16 @@ func main() {
 		}
 	}
 
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 10; i++ {
 		start = time.Now()
-		b := generator.SureGenerateComplete()
+		b, key := generator.SureGenerateComplete()
 		fmt.Println("used time:", time.Now().Sub(start))
 
 		b.Print()
+		fmt.Println("-----------------")
+		fmt.Println("key numbers:", key.Numbers())
+		fmt.Println(key.OneLine())
+		key.Print()
 		fmt.Println("-----------------")
 
 		fmt.Println("digg...")

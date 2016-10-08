@@ -311,6 +311,7 @@ func (c *Choice) trySet(x, y, number int) bool {
 		return false
 	}
 
+	//fmt.Printf("try set %d @ (%d, %d), <%d, %d>\n", number, x, y, mc, mp)
 	c.freeGroup(number, 0, mc)
 	c.freeGroup(number, 1, y)
 	c.freeGroup(number, 2, x)
@@ -331,6 +332,12 @@ func (c *Choice) trySet(x, y, number int) bool {
 			yc := my0 + j
 			c.kill(number, xc, yc)
 		}
+	}
+
+	c.checkGroupPair(0, mc)
+	for i := 0; i < M; i++ {
+		c.checkGroupPair(1, my0+i)
+		c.checkGroupPair(2, mx0+i)
 	}
 
 	return true
@@ -499,11 +506,71 @@ func (c *Choice) free(n, t, a, b int) {
 							set[n] = true
 						}
 
-						for _, p := range s {
-							for i := 0; i < N; i++ {
-								if _, ok := set[i+1]; !ok {
+						for i := 0; i < N; i++ {
+							if _, ok := set[i+1]; !ok {
+								for _, p := range s {
 									c.free(i+1, t, a, p)
 								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func (c *Choice) checkGroupPair(t, a int) {
+	grids := [N][]int{}
+	for i := range grids {
+		grids[i] = make([]int, 0, N)
+	}
+
+	for i := 0; i < N; i++ {
+		s := c[i][t][a]
+		for _, p := range s {
+			grids[p] = append(grids[p], i+1)
+		}
+	}
+
+	ss := make(map[string][]int)
+	sp := make(map[string][]int)
+	for i := 0; i < N; i++ {
+		ns := grids[i]
+		if len(ns) <= 1 {
+			continue
+		}
+
+		v := fmt.Sprintf("%v", ns)
+		_, ok := ss[v]
+		if ok {
+			sp[v] = append(sp[v], i)
+		} else {
+			ss[v] = ns
+			sp[v] = []int{i}
+		}
+	}
+
+	if len(ss) > 1 {
+		for v, ns := range ss {
+			ps := sp[v]
+			if len(ns) == len(ps) && len(ns) > 1 {
+				//fmt.Printf("pair t %d, <%d>, numbers %v, pos %v\n", t, a, ns, ps)
+				set := make(map[int]bool)
+				for _, p := range ps {
+					set[p] = true
+				}
+
+				for i := 0; i < N; i++ {
+					if _, ok := set[i]; !ok {
+						for _, n := range ns {
+							if t == 0 {
+								x, y := Cell2XY(a, i)
+								c.kill(n, x, y)
+							} else if t == 1 {
+								c.kill(n, i, a)
+							} else {
+								c.kill(n, a, i)
 							}
 						}
 					}

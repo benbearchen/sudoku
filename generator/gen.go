@@ -9,19 +9,24 @@ import (
 )
 
 type genNode struct {
+	key  n2n.Board
 	s    *n2n.State
 	left [][3]int
 }
 
-func newGenNode(s *n2n.State) *genNode {
+var (
+	rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
+)
+
+func newGenNode(key n2n.Board, s *n2n.State) *genNode {
 	all := s.Choice().All()
 
 	left := make([][3]int, len(all))
-	for i, r := range rand.New(rand.NewSource(time.Now().UnixNano())).Perm(len(left)) {
+	for i, r := range rnd.Perm(len(left)) {
 		left[i] = all[r]
 	}
 
-	return &genNode{s, left}
+	return &genNode{key, s, left}
 }
 
 func (n *genNode) next() *genNode {
@@ -33,30 +38,32 @@ func (n *genNode) next() *genNode {
 		x, y := n2n.Cell2XY(tup[1], tup[2])
 		s, ok := n.s.Next(number, x, y)
 		if ok {
-			return newGenNode(s)
+			key := n.key
+			key.Set(x, y, number)
+			return newGenNode(key, s)
 		}
 	}
 
 	return nil
 }
 
-func SureGenerateComplete() n2n.Board {
+func SureGenerateComplete() (board n2n.Board, key n2n.Board) {
 	for {
-		b, _, ok := GenerateComplete()
+		b, key, _, ok := GenerateComplete()
 		if ok {
-			return b
+			return b, key
 		}
 	}
 }
 
-func GenerateComplete() (board n2n.Board, times int, found bool) {
+func GenerateComplete() (board n2n.Board, key n2n.Board, times int, found bool) {
 	c := 0
 	maxDepth := 1
 	defer func() {
 		//fmt.Println("try times:", c, "maxDepth:", maxDepth)
 	}()
 
-	nodes := []*genNode{newGenNode(n2n.NewState(n2n.Board{}))}
+	nodes := []*genNode{newGenNode(n2n.Board{}, n2n.NewState(n2n.Board{}))}
 	for len(nodes) > 0 {
 		n := nodes[len(nodes)-1].next()
 		c++
@@ -68,6 +75,7 @@ func GenerateComplete() (board n2n.Board, times int, found bool) {
 
 		if n.s.Board().Finished() {
 			board = n.s.Board()
+			key = n.key
 			times = c
 			found = true
 			return
@@ -90,7 +98,7 @@ func GenerateComplete() (board n2n.Board, times int, found bool) {
 func Digg(b n2n.Board) n2n.Board {
 	const min = 30
 	for {
-		seq := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(n2n.N * n2n.N)
+		seq := rnd.Perm(n2n.N * n2n.N)
 		for i := min; i < 35; i++ {
 			p := seq[i:]
 
